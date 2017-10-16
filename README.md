@@ -1,1 +1,3 @@
-# Script
+# Scripts 
+A collection of kOS Scripts for Kerbal Space Program.
+Most of them work...

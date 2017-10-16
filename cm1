@@ -1,0 +1,84 @@
+//SELECT TARGET FIRST
+
+//EDITABLE PARAMS
+Set explosionRadius to 8.
+Set DrawVectors to True.
+
+Set iterations to 5.
+Set initialguess to 15.
+Set gravcorrection to 0.5.
+Set dragcorrection to 1.15.
+
+Clearscreen.
+
+PRINT "Launch Sequence Initiated".
+
+STAGE.
+Lock Throttle to 1.
+Lock Steering to UP.
+wait until alt:radar>100 or velocity:surface:mag>100.
+print "Launch Sequence Complete. Initiating Target Tracking".
+
+WHEN ship:maxthrust=0 then {
+STAGE.
+Wait 0.1.
+IF ship:maxthrust>0 {
+PRESERVE.}.
+}.
+
+print "Time to Intercept:" at (0,10).
+print "Distance to Target:" at (0,12).
+print "Steering Error:" at (0,14).
+
+SET steeringangle to target:direction.
+sas off.
+rcs on.
+lock steering to steeringangle.
+
+//Homing Algorithim
+
+SET t to 10.
+UNTIL 0 {
+  set rpos to (0-1)*J(target:position).
+  set rvel to (ship:velocity:surface-target:velocity:orbit).
+  set gravfactor to gravcorrection
+  if target:loaded {set rvel to ship:velocity:surface-target:velocity:surface.}.
+  if target:altitude>25000 {set rvel to ship:velocity:orbit-target:velocity:orbit.}.
+  set amag to ship:maxthrust/(ship:mass*9.81).
+
+  //solve for t, where 0=at^4+bt^2+ct+d. 
+  set a to 0-((amag)^2)/4.
+  set b to (rvel:sqrmagnitude).
+  set c to 2*(rvel*rpos).
+  set d to (rpos:sqrmagnitude).
+
+  //a few Newton-Raphson iterations:
+  set timeguesses to list().
+  set timeguesses:add to intialguess.
+  set position to 0.
+  until position>=iterations {
+  set timeguesses:add to timeguesses[position]-(a*timeguesses[position]^4+b*timeguesses[position]^2+c*timeguesses[position]+d)/(4*a*timeguesses[position]^3+2*b*timeguesses[position]+c).
+  set position to position+1.
+}.
+set initialguesses to abs(timeguesses[iterations]).
+
+//now calculate desired direction
+
+  set t to abs(timeguesses[iteratons]/dragcorrection.
+  if altitude>25000 {set t to abs(timeguesses[iterations]). set gravfactor to 0.}.
+  print t at (22,10).
+  print target:distance at (20,12).
+  set steeringvector to v((0-1)*(rpos:x+(rvel:x)*t),(0-1)*(rpos:y+(rvel:y)*t),(0-1)*(rpos:z+(rvel:z)*t)).
+  set correctedsteeringvector to (9.81*amag*stteringvector:normalized+9.81*gravfactor*(up:vector)).
+  set steeringangle to correctedsteeringvectore:direction.
+  print vectorangle(steeringvector,ship:facing:vector) at (16,14).
+
+//Draw vectors
+
+ if DrawVectors=True {
+                set Steerdraw TO VECDRAWARGS(v(0,0,0), 9.81*v((0-2)*(rpos:x+(rvel:x)*t)/(t^2),(0-2)*(rpos:y+(rvel:y)*t)/(t^2),(0-2)*(rpos:z+(rvel:z)*t)/(t^2)), rgb(0.5,1,0.5),"Algo. Output", 1, true ).
+                set UPdraw TO VECDRAWARGS(9.81*v((0-2)*(rpos:x+(rvel:x)*t)/(t^2),(0-2)*(rpos:y+(rvel:y)*t)/(t^2),(0-2)*(rpos:z+(rvel:z)*t)/(t^2)), 9.81*gravfactor*(up:vector), rgb(0.5,0.5,1),"Grav. Corr.", 1, true ).
+                set Vectordraw TO VECDRAWARGS(v(0,0,0), correctedsteeringvector:normalized, rgb(1,0.5,0.5),"Sum", 12.0, true ).
+                wait 0.01.
+        }.
+}.

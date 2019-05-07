@@ -3,6 +3,7 @@
 // meant to be a launch booster.
 // This could also work for air launched cruise missiles with some slight 
 // modifications.
+//YouTube video demo: https://www.youtube.com/watch?v=UthPvv5zyY4
 
 
 LOCAL cAltitude 	IS 750.
